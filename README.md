@@ -77,7 +77,7 @@ Esc: Quit
 ```
 The script uses the classes implemented in `panda_equilibrium_controller.py` and `softhand_setpt_controller.py` which can be reused to write other high level control scripts.
 ### traj_recorder.py
-Records a trajectory (end effector pose, joint configuration, and SoftHand setpoint (if connected)) to an .npz file. Recording can be paused and resumed, with interpolation between poses inserted in the final trajectory. The trajectory will be saved in the working directory, if a string argument is supplied as an argument to the script it will be used as the filename, otherwise it will defualt to Date_Time. \
+Records a trajectory (end effector pose, joint configuration, and SoftHand setpoint (if connected)) to an .npz file. Recording can be paused and resumed, with interpolation between poses inserted in the final trajectory. The trajectory will be saved in the working directory, if a string argument is supplied to the script it will be used as the filename, otherwise it will default to Date_Time. \
 Eg (will save as test.npz):
 ```
 python3 traj_recorder.py test
