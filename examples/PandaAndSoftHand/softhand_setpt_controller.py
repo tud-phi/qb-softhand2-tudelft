@@ -12,7 +12,8 @@ class softhand_setpt_controller():
         # Keyboard listener for adjustment with arrow keys
         self.listener = Listener(on_press=self._on_press, suppress=False)
         self.listener.start()
-        self.use_keyboard = True
+        self.use_keyboard = False
+        self.suspend_key_input = False
         # Subscribe to SpaceMouse button input topic for button control
         self.sm_sub = rospy.Subscriber("/spacenav/joy", Joy, self.sm_joy_callback)
         self.sm_Lbutton_prev = 0
@@ -32,7 +33,7 @@ class softhand_setpt_controller():
         self.setpt.velocities = [0.0, 0.0]
         self.setpt.accelerations = [0.0, 0.0]
         self.setpt.effort = [0.0, 0.0]
-        self.setpt.time_from_start = rospy.Time.from_sec(0.25)	# TODO - elminate manual delay?
+        self.setpt.time_from_start = rospy.Time.from_sec(0.01)	# TODO - eliminate manual delay?
         self.setpt_cmd = JointTrajectory()
         # State flags
         self.synergy_close = False  # Toggle open/closed with sm button
@@ -41,6 +42,9 @@ class softhand_setpt_controller():
         self.manip_lock = False     # Lock manipulation with control pad input
 
     def _on_press(self, key):
+        if self.suspend_key_input:
+            return
+
         # Control input toggles
         if key == KeyCode.from_char('1'):
             self.use_keyboard = not self.use_keyboard
@@ -57,7 +61,7 @@ class softhand_setpt_controller():
         if key == KeyCode.from_char('4'):
             self.use_control_pad = not self.use_control_pad
             if self.use_control_pad: 
-                print("\nSofthand control pag input on")
+                print("\nSofthand control pad input on")
                 if self.use_keyboard:
                     self.use_keyboard = False
                     print("Softhand keyboard input off")

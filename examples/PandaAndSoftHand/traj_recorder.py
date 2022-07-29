@@ -76,9 +76,9 @@ def interpolate_poses(pose_start, pose_end, interp_dist):
 
     for i in range(step_num):
         interp_pose = PoseStamped()      
-        interp_pose.header.seq = 1
+        interp_pose.header.seq = i
         interp_pose.header.stamp = rospy.Time.now()
-        interp_pose.header.frame_id = ""
+        interp_pose.header.frame_id = "interpolated" # not really a frame... just to indicate which points are interpolated
 
         interp_pose.pose.position.x = interp_x[i]
         interp_pose.pose.position.y = interp_y[i]
@@ -93,25 +93,79 @@ def interpolate_poses(pose_start, pose_end, interp_dist):
 
     return interpolated_traj
 
+def interpolate_joints(config_start, config_end, interp_ang):
+    start_pos = np.array(config_start.position)
+    end_pos = np.array(config_end.position)
+    step_num = math.floor(np.max(np.abs(end_pos-start_pos))/interp_ang)
+    interp_pos = np.linspace(start_pos, end_pos, step_num)
+
+    interpolated_traj = config_start
+
+    for i in range(step_num):
+        interp_joints = JointState()
+        interp_joints.name = config_start.name
+        interp_joints.header.seq = i
+        interp_joints.header.stamp = rospy.Time.now()
+        interp_joints.header.frame_id = "interpolated"
+
+        interp_joints.position = interp_pos[i]
+
+        interpolated_traj = np.c_[interpolated_traj, interp_joints]
+
+    return interpolated_traj
+
+def interpolate_softhand(setpt_start, setpt_end, interp_dist):
+    start_setpt = np.array(setpt_start.points.positions)
+    end_setpt = np.array(setpt_end.points.positions)
+    step_num = math.floor(np.max(np.abs(end_setpt-start_setpt))/interp_dist)
+    interp_setpt = np.linspace(start_setpt, end_setpt, step_num)
+
+    interpolated_traj = setpt_start
+
+    for i in range(step_num):
+        interp_setpt = JointTrajectory()
+        interp_setpt.joint_names = interp_setpt.joint_names
+        interp_setpt.header.seq = i
+        interp_setpt.header.stamp = rospy.Time.now()
+        interp_setpt.header.frame_id = "interpolated"
+
+        interp_setpt.points.positions = interp_setpt[i]
+        interp_setpt.points.velocities = [0.0, 0.0]
+        interp_setpt.accelerations = [0.0, 0.0]
+        interp_setpt.effort = [0.0, 0.0]
+        interp_setpt.time_from_start = rospy.Time.from_sec(0.25) # TODO - eliminate manual delay?
+
+        interpolated_traj = np.c_[interpolated_traj, interp_setpt]
+
+    return interpolated_traj
+
 #%%
 if __name__ == '__main__':
 
     rospy.init_node('traj_recorder', anonymous=True)
 
-    if "qb_device_communication_handler" in rosnode.get_node_names():
-        record_hand = True
-    else:
-        print("SoftHand connection not detected, recording arm trajectory only.")
-        record_hand = False
-
-    pose_sub = rospy.Subscriber("/cartesian_pose", PoseStamped, pose_callback)
-    goal_sub = rospy.Subscriber('/equilibrium_pose', PoseStamped, goal_callback)
-    joint_sub = rospy.Subscriber("/joint_states", JointState, joint_callback)
-    if record_hand: hand_sub = rospy.Subscriber('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, hand_callback)
-
     key_listener = keyboard.Listener(on_press=_on_press, suppress=False)
     key_listener.start()
     key_in = None
+
+    arm_connected = True if "/panda_controller_spawner" in rosnode.get_node_names() else False # TODO - check node name for real connection
+    hand_connected = True if "/qb_device_communication_handler" in rosnode.get_node_names() else False
+
+    if arm_connected:
+        pose_sub = rospy.Subscriber("/cartesian_pose", PoseStamped, pose_callback)
+        goal_sub = rospy.Subscriber('/equilibrium_pose', PoseStamped, goal_callback)
+        joint_sub = rospy.Subscriber("/joint_states", JointState, joint_callback)
+        print("Panda arm detected")
+    else:
+        print("Panda arm not detected")
+    if hand_connected:
+        hand_sub = rospy.Subscriber('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, hand_callback)
+        print("SoftHand detected")
+    else:
+        print("SoftHand not detected")
+    if (not arm_connected) and (not hand_connected):
+        print("Nothing to record, exiting")
+        sys.exit()
 
     record_rate = 10 # Hz
     ros_record_rate = rospy.Rate(record_rate)
@@ -130,32 +184,44 @@ if __name__ == '__main__':
     key_in = None
 
     print("\nRecording started. Press P to pause.")
-    pose_trajectory = pose_current  # Note first point of pose trajectory is actual starting pose, the rest will be goal equilibrium poses
-    joint_trajectory = joint_state_current
-    hand_trajectory = hand_command_current if record_hand else None
+    pose_trajectory = pose_current if arm_connected else None # Note first point of pose trajectory is actual starting pose, the rest will be goal equilibrium poses
+    joint_trajectory = joint_state_current if arm_connected else None
+    hand_trajectory = hand_command_current if hand_connected else None
     ros_record_rate.sleep()
 
     while True:
         if key_in == KeyCode.from_char('p'):
             print("\nRecording paused. Press P again to resume recording. Press Space to end.")
             print("Note: saved trajectory will interpolate between pause and resume poses)")
-            pose_at_pause = pose_current
+            pose_at_pause = pose_current if arm_connected else None
+            joints_at_pause = joint_state_current if arm_connected else None
+            setpts_at_pause = hand_command_current if hand_connected else None
+
             key_in = None
             while (key_in != KeyCode.from_char('p') and key_in != Key.space):
                 pass
             if key_in == Key.space:
                 break
             elif key_in == KeyCode.from_char('p'):
-                interpolated_traj = interpolate_poses(pose_at_pause, pose_current, 0.1/record_rate)
-                pose_trajectory = np.c_[pose_trajectory, interpolated_traj] # TODO - add joint and hand interpolation
+                # Insert interpolations into trajectories # TODO - add padding to make sure all interpolated trajectories same length
+                if arm_connected:
+                    interpolated_poses = interpolate_poses(pose_at_pause, pose_current, 0.1/record_rate) # 0.1m/s
+                    pose_trajectory = np.c_[pose_trajectory, interpolated_poses]
+                    interpolated_joints = interpolate_joints(joints_at_pause, joint_state_current, np.pi/4/record_rate) # 45deg/s
+                    joint_trajectory = np.c_[joint_trajectory, interpolated_joints]
+                if hand_connected:
+                    interpolated_setpts = interpolate_softhand(setpts_at_pause, hand_command_current, 0.5/record_rate) # close halfway/s 
+                    hand_trajectory = np.c_[hand_trajectory, interpolated_setpts]
+
                 key_in = None
                 print("\nRecording resumed. Press P to pause.")
         else:
             # Recording
-            pose_trajectory = np.c_[pose_trajectory, goal_current]  # TODO - should record current pose instead of goal?
-            joint_trajectory = np.c_[joint_trajectory, joint_state_current]
-            if record_hand: hand_trajectory = np.c_[hand_trajectory, hand_command_current]
-            ros_record_rate.sleep()
+            if arm_connected:
+                pose_trajectory = np.c_[pose_trajectory, goal_current]  # TODO - should record current pose instead of goal?
+                joint_trajectory = np.c_[joint_trajectory, joint_state_current]
+            if hand_connected: hand_trajectory = np.c_[hand_trajectory, hand_command_current]
+            ros_record_rate .sleep()
     
     np.savez(
         str(pathlib.Path().resolve())+'/'+str(record_name)+'.npz',

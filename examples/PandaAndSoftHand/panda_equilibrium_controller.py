@@ -15,6 +15,7 @@ class panda_equilibrium_controller():
         self.key_listener = keyboard.Listener(on_press=self._on_press, suppress=False)
         self.key_listener.start()
         self.use_keyboard = False
+        self.suspend_key_input = False
         # Create listener for mouse input
         self.prev_mouse_pos = None
         self.mouse_listener = mouse.Listener(on_move=self._on_mouse_move, on_scroll=self._on_mouse_scroll, suppress=False)
@@ -23,7 +24,7 @@ class panda_equilibrium_controller():
         # Subscribe to SpaceMouse input topic
         self.sm_sub = rospy.Subscriber("/spacenav/twist", Twist, self.sm_input_callback)
         self.use_sm = False
-        # Arm
+        # Goal pose subcriber and publisher
         self.K_pos = 600
         self.K_ori = 30
         self.K_ns = 10
@@ -34,6 +35,9 @@ class panda_equilibrium_controller():
         self.goal = PoseStamped()
 
     def _on_press(self, key):
+        if self.suspend_key_input:
+            return
+
         # Control input toggles
         if key == KeyCode.from_char('1'):
             self.use_keyboard = not self.use_keyboard
