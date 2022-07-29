@@ -73,7 +73,8 @@ Control pad controls (use analog trigger mode):
 	Left bumper:	 Lock SoftHand manipulation
 	Right bumper:	 Lock SoftHand synergy
 
-Esc: Quit
+Esc:	Quit
+`:	Toggle suspending all keyboard input
 ```
 The script uses the classes implemented in `panda_equilibrium_controller.py` and `softhand_setpt_controller.py` which can be reused to write other high level control scripts.
 ### traj_recorder.py
