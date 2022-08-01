@@ -1,31 +1,13 @@
 #%%
 #!/usr/bin/env python
-import sys
-import pathlib
-import math
+
 import numpy as np
 import quaternion # pip install numpy-quaternion
+import math
 import rospy
-import rosnode
 from geometry_msgs.msg import PoseStamped
+from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory
-from pynput import keyboard
-from pynput.keyboard import Key
-
-global key_in
-global pose_current
-
-def _on_press(key):
-    global key_in 
-    key_in = key
-
-def pose_callback(pose):
-    global pose_current 
-    pose_current = pose
-
-def hand_callback(hand_command):
-    global hand_command_current
-    hand_command_current = hand_command
 
 # Adapted from Learning_from_demonstration.py go_to_pose()
 def interpolate_poses(pose_start, pose_end, interp_dist):
@@ -63,9 +45,9 @@ def interpolate_poses(pose_start, pose_end, interp_dist):
 
     for i in range(step_num):
         interp_pose = PoseStamped()      
-        interp_pose.header.seq = 1
+        interp_pose.header.seq = i
         interp_pose.header.stamp = rospy.Time.now()
-        interp_pose.header.frame_id = ""
+        interp_pose.header.frame_id = "interpolated" # not really a frame... just to indicate which points are interpolated
 
         interp_pose.pose.position.x = interp_x[i]
         interp_pose.pose.position.y = interp_y[i]
@@ -77,6 +59,27 @@ def interpolate_poses(pose_start, pose_end, interp_dist):
         interp_pose.pose.orientation.w = interp_quat.w
 
         interpolated_traj = np.c_[interpolated_traj, interp_pose]
+
+    return interpolated_traj
+
+def interpolate_joints(config_start, config_end, interp_ang):
+    start_pos = np.array(config_start.position)
+    end_pos = np.array(config_end.position)
+    step_num = math.floor(np.max(np.abs(end_pos-start_pos))/interp_ang)
+    interp_pos = np.linspace(start_pos, end_pos, step_num)
+
+    interpolated_traj = config_start
+
+    for i in range(step_num):
+        interp_joints = JointState()
+        interp_joints.name = config_start.name
+        interp_joints.header.seq = i
+        interp_joints.header.stamp = rospy.Time.now()
+        interp_joints.header.frame_id = "interpolated"
+
+        interp_joints.position = interp_pos[i]
+
+        interpolated_traj = np.c_[interpolated_traj, interp_joints]
 
     return interpolated_traj
 
@@ -104,55 +107,3 @@ def interpolate_softhand(setpt_start, setpt_end, interp_dist):
         interpolated_traj = np.c_[interpolated_traj, interp_setpt]
 
     return interpolated_traj
-
-#%%
-if __name__ == '__main__':
-
-    rospy.init_node('traj_player', anonymous=True)
-
-    key_listener = keyboard.Listener(on_press=_on_press, suppress=False)
-    key_listener.start()
-    key_in = None
-
-    arm_connected = True if ("/panda_controller_spawner" in rosnode.get_node_names()) or ("/franka_control" in rosnode.get_node_names()) else False
-    hand_connected = True if "/qb_device_communication_handler" in rosnode.get_node_names() else False
-
-    if arm_connected:
-        pose_sub = rospy.Subscriber("/cartesian_pose", PoseStamped, pose_callback)
-        goal_pub = rospy.Publisher("/equilibrium_pose", PoseStamped, queue_size=0)
-        goal_pose = PoseStamped()
-    if hand_connected:
-        hand_sub = rospy.Subscriber('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, hand_callback)
-        hand_pub = rospy.Publisher('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, queue_size=0)
-        hand_setpt = JointTrajectory()
-
-    record_rate = 10 # Hz
-    ros_record_rate = rospy.Rate(record_rate)
-    
-    if len(sys.argv) < 2:
-        print("Path to recorded trajectory (relative to script) must be included as an argument.")
-        sys.exit()
-    record = np.load(str(pathlib.Path().resolve())+'/'+sys.argv[1], allow_pickle=True)
-    pose_data = record['pose_trajectory'].squeeze()
-    hand_data = record['hand_trajectory'].squeeze()
-
-    print("Going to starting pose...")
-    traj_to_start = interpolate_poses(pose_current, pose_data[0], 0.1/record_rate).squeeze()
-    for i in range (traj_to_start.size):
-        goal_pose = traj_to_start[i]
-        goal_pub.publish(goal_pose)
-        if key_in == Key.esc:
-            break
-        ros_record_rate.sleep()
-    # TODO - add softhand trajectory playback
-
-    print("Playback started. Press Esc to stop.")
-    for i in range (pose_data.size):
-        goal_pose = pose_data[i]
-        goal_pub.publish(goal_pose)
-        if key_in == Key.esc:
-            break
-        ros_record_rate.sleep()
-
-    print("Playback completed.")
-    
