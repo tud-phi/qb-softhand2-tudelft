@@ -24,7 +24,7 @@ if __name__ == '__main__':
     key_in = None
     suspend_key_input = False
 
-    arm_connected = True if "/panda_controller_spawner" in rosnode.get_node_names() else False # TODO - check node name for real connection
+    arm_connected = True if ("/panda_controller_spawner" in rosnode.get_node_names()) or ("/franka_control" in rosnode.get_node_names()) else False
     hand_connected = True if "/qb_device_communication_handler" in rosnode.get_node_names() else False
 
     # Instantiate Panda equilibrium pose controller 

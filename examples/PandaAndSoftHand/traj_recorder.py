@@ -148,7 +148,7 @@ if __name__ == '__main__':
     key_listener.start()
     key_in = None
 
-    arm_connected = True if "/panda_controller_spawner" in rosnode.get_node_names() else False # TODO - check node name for real connection
+    arm_connected = True if ("/panda_controller_spawner" in rosnode.get_node_names()) or ("/franka_control" in rosnode.get_node_names()) else False
     hand_connected = True if "/qb_device_communication_handler" in rosnode.get_node_names() else False
 
     if arm_connected:
@@ -203,15 +203,28 @@ if __name__ == '__main__':
             if key_in == Key.space:
                 break
             elif key_in == KeyCode.from_char('p'):
-                # Insert interpolations into trajectories # TODO - add padding to make sure all interpolated trajectories same length
+                # Insert interpolations into trajectories
+                interp_length = 0
                 if arm_connected:
                     interpolated_poses = interpolate_poses(pose_at_pause, pose_current, 0.1/record_rate) # 0.1m/s
                     pose_trajectory = np.c_[pose_trajectory, interpolated_poses]
+                    interp_length = interpolated_poses.size
                     interpolated_joints = interpolate_joints(joints_at_pause, joint_state_current, np.pi/4/record_rate) # 45deg/s
                     joint_trajectory = np.c_[joint_trajectory, interpolated_joints]
+                    interp_length = np.max([interpolated_joints.size, interp_length])
                 if hand_connected:
                     interpolated_setpts = interpolate_softhand(setpts_at_pause, hand_command_current, 0.5/record_rate) # close halfway/s 
                     hand_trajectory = np.c_[hand_trajectory, interpolated_setpts]
+                    interp_length = np.max([interpolated_setpts.size, interp_length])
+                # Add padding so interpolation lengths match
+                if arm_connected:
+                    for n_pad in range(interp_length-interpolated_poses.size):
+                        pose_trajectory = np.c_[pose_trajectory, pose_trajectory[0][-1]]
+                    for n_pad in range(interp_length-interpolated_joints.size):
+                        joint_trajectory = np.c_[joint_trajectory, joint_trajectory[0][-1]]
+                if hand_connected:
+                    for n_pad in range(interp_length-interpolated_setpts.size):
+                        hand_trajectory = np.c_[hand_trajectory, hand_trajectory[0][-1]]
 
                 key_in = None
                 print("\nRecording resumed. Press P to pause.")
