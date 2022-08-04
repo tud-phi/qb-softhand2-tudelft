@@ -1,13 +1,12 @@
 #%%
 #!/usr/bin/env python
-
 import numpy as np
 import quaternion # pip install numpy-quaternion
 import math
 import rospy
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 # Adapted from Learning_from_demonstration.py go_to_pose()
 def interpolate_poses(pose_start, pose_end, interp_dist):
@@ -35,6 +34,7 @@ def interpolate_poses(pose_start, pose_end, interp_dist):
     step_num_polar = math.floor(theta / interp_dist_polar)
     # Use maximum step count
     step_num = np.max([step_num_polar,step_num_lin])
+    step_num = np.max([1,step_num])
 
     # Construct list of interpolated poses
     interpolated_traj = pose_start
@@ -66,6 +66,7 @@ def interpolate_joints(config_start, config_end, interp_ang):
     start_pos = np.array(config_start.position)
     end_pos = np.array(config_end.position)
     step_num = math.floor(np.max(np.abs(end_pos-start_pos))/interp_ang)
+    step_num = np.max([1,step_num])
     interp_pos = np.linspace(start_pos, end_pos, step_num)
 
     interpolated_traj = config_start
@@ -84,10 +85,11 @@ def interpolate_joints(config_start, config_end, interp_ang):
     return interpolated_traj
 
 def interpolate_softhand(setpt_start, setpt_end, interp_dist):
-    start_setpt = np.array(setpt_start.points.positions)
-    end_setpt = np.array(setpt_end.points.positions)
+    start_setpt = np.array(setpt_start.points[0].positions)
+    end_setpt = np.array(setpt_end.points[0].positions)
     step_num = math.floor(np.max(np.abs(end_setpt-start_setpt))/interp_dist)
-    interp_setpt = np.linspace(start_setpt, end_setpt, step_num)
+    step_num = np.max([1,step_num])
+    interp_setpts = np.linspace(start_setpt, end_setpt, step_num)
 
     interpolated_traj = setpt_start
 
@@ -98,11 +100,14 @@ def interpolate_softhand(setpt_start, setpt_end, interp_dist):
         interp_setpt.header.stamp = rospy.Time.now()
         interp_setpt.header.frame_id = "interpolated"
 
-        interp_setpt.points.positions = interp_setpt[i]
-        interp_setpt.points.velocities = [0.0, 0.0]
-        interp_setpt.accelerations = [0.0, 0.0]
-        interp_setpt.effort = [0.0, 0.0]
-        interp_setpt.time_from_start = rospy.Time.from_sec(0.25) # TODO - eliminate manual delay?
+        interp_setptpt = JointTrajectoryPoint()
+        interp_setptpt.positions = interp_setpts[i]
+        interp_setptpt.velocities = [0.0, 0.0]
+        interp_setptpt.accelerations = [0.0, 0.0]
+        interp_setptpt.effort = [0.0, 0.0]
+        interp_setptpt.time_from_start = rospy.Time.from_sec(0.25) # TODO - eliminate manual delay?
+
+        interp_setpt.points.append(interp_setptpt)
 
         interpolated_traj = np.c_[interpolated_traj, interp_setpt]
 

@@ -15,7 +15,7 @@ def _on_press(key):
 
 #%%
 if __name__ == '__main__':
-    rospy.init_node('arm_hand_key_control', anonymous=True)
+    rospy.init_node('arm_hand_combined_control', anonymous=True)
 
 #%%    
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         mouse_state = mouse.Controller()
 
         PEC = panda_equilibrium_controller.panda_equilibrium_controller()
-        PEC.set_stiffness(PEC.K_pos, PEC.K_pos, PEC.K_pos ,PEC.K_ori,PEC.K_ori,PEC.K_ori, 0.0)
+        PEC.set_stiffness(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         PEC.prev_mouse_pos = mouse_state.position
         # Set initial goal    
         PEC.goal.header.seq = 1
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         PEC.goal.pose.orientation.y = PEC.curr_ori[2]
         PEC.goal.pose.orientation.z = PEC.curr_ori[3]
         PEC.goal.pose.orientation.w = PEC.curr_ori[0]
-        print("Panda arm detected")
+        print("Panda arm detected, controller stiffness set to 0")
     else:
         print("Panda arm not detected")
 

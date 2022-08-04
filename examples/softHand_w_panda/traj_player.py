@@ -33,6 +33,10 @@ if __name__ == '__main__':
 
     rospy.init_node('traj_player', anonymous=True)
 
+    if ("/arm_hand_combined_control" in rosnode.get_node_names()): 
+        print("Shut down manual control before starting trajectory playback")
+        sys.exit()
+
     key_listener = keyboard.Listener(on_press=_on_press, suppress=False)
     key_listener.start()
     key_in = None
@@ -42,13 +46,14 @@ if __name__ == '__main__':
 
     if arm_connected:
         pose_sub = rospy.Subscriber("/cartesian_pose", PoseStamped, pose_callback)
+        pose_current = None
         goal_pub = rospy.Publisher("/equilibrium_pose", PoseStamped, queue_size=0)
         goal_pose = PoseStamped()
         print("Panda arm detected")
     else:
         print("Panda arm not detected")
     if hand_connected:
-        hand_sub = rospy.Subscriber('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, hand_callback)
+        # hand_sub = rospy.Subscriber('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, hand_callback)
         hand_pub = rospy.Publisher('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, queue_size=0)
         hand_setpt = JointTrajectory()
         print("SoftHand detected")
@@ -58,7 +63,7 @@ if __name__ == '__main__':
         print("Nothing to play to, exiting")
         sys.exit()
 
-    record_rate = 10 # Hz. Should match recording rate.
+    record_rate = 30 # Hz. Should match recording rate.
     ros_record_rate = rospy.Rate(record_rate)
     
     # Load data and check which trajectories are contained
@@ -68,13 +73,13 @@ if __name__ == '__main__':
     record = np.load(str(pathlib.Path().resolve())+'/'+sys.argv[1], allow_pickle=True)
     pose_data = record['pose_trajectory'].squeeze()
     if np.any(pose_data) == None:
-        print("Recorded pose trajectory is empty")
+        print("Recorded Panda pose trajectory is empty")
         arm_connected = False
     else:
         record_length = pose_data.size
     hand_data = record['hand_trajectory'].squeeze()
     if np.any(hand_data) == None: 
-        print("Recorded hand trajectory is empty")
+        print("Recorded SoftHand trajectory is empty")
         hand_connected = False
     else:
         record_length = hand_data.size
@@ -82,23 +87,17 @@ if __name__ == '__main__':
         print("Trajectory recording empty, exiting")
         sys.exit()
 
-    print("Going to starting pose...")
     if arm_connected:
+        print("Going to starting pose...")
+        while pose_current == None:
+            pass    # Wait for pose update
         to_start_pose = interpolate_poses(pose_current, pose_data[0], 0.1/record_rate).squeeze()
-        n_to_start = to_start_pose.size
-    if hand_connected:
-        to_start_hand = interpolate_softhand(hand_command_current, hand_data[0], 0.5/record_rate).squeeze()
-        n_to_start = to_start_hand.size
-    for i in range (n_to_start):
-        if arm_connected:
+        for i in range (to_start_pose.size):
             goal_pose = to_start_pose[i]
             goal_pub.publish(goal_pose)
-        if hand_connected:
-            hand_setpt = to_start_hand[i]
-            hand_pub.publish(hand_setpt)
-        if key_in == Key.esc:
-            break
-        ros_record_rate.sleep()
+            if key_in == Key.esc:
+                break
+            ros_record_rate.sleep()
 
     print("Playback started. Press Esc to stop.")
     for i in range (record_length):
@@ -107,6 +106,7 @@ if __name__ == '__main__':
             goal_pub.publish(goal_pose)
         if hand_connected:
             hand_setpt = hand_data[i]
+            hand_setpt.header.stamp = rospy.Time.now()
             hand_pub.publish(hand_setpt)
         if key_in == Key.esc:
             break

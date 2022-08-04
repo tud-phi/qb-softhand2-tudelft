@@ -69,7 +69,7 @@ if __name__ == '__main__':
         print("Nothing to record, exiting")
         sys.exit()
 
-    record_rate = 10 # Hz
+    record_rate = 30 # Hz
     ros_record_rate = rospy.Rate(record_rate)
 
     if len(sys.argv) < 2:
@@ -97,7 +97,7 @@ if __name__ == '__main__':
             print("Note: saved trajectory will interpolate between pause and resume poses)")
             pose_at_pause = pose_current if arm_connected else None
             joints_at_pause = joint_state_current if arm_connected else None
-            setpts_at_pause = hand_command_current if hand_connected else None
+            setpt_at_pause = hand_command_current if hand_connected else None
 
             key_in = None
             while (key_in != KeyCode.from_char('p') and key_in != Key.space):
@@ -115,7 +115,7 @@ if __name__ == '__main__':
                     joint_trajectory = np.c_[joint_trajectory, interpolated_joints]
                     interp_length = np.max([interpolated_joints.size, interp_length])
                 if hand_connected:
-                    interpolated_setpts = interpolate_softhand(setpts_at_pause, hand_command_current, 0.5/record_rate) # close halfway/s 
+                    interpolated_setpts = interpolate_softhand(setpt_at_pause, hand_command_current, 0.5/record_rate) # close halfway/s 
                     hand_trajectory = np.c_[hand_trajectory, interpolated_setpts]
                     interp_length = np.max([interpolated_setpts.size, interp_length])
                 # Add padding so interpolation lengths match
@@ -133,7 +133,7 @@ if __name__ == '__main__':
         else:
             # Recording
             if arm_connected:
-                pose_trajectory = np.c_[pose_trajectory, goal_current]  # TODO - should record current pose instead of goal?
+                pose_trajectory = np.c_[pose_trajectory, pose_current]
                 joint_trajectory = np.c_[joint_trajectory, joint_state_current]
             if hand_connected: hand_trajectory = np.c_[hand_trajectory, hand_command_current]
             ros_record_rate .sleep()

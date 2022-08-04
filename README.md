@@ -29,15 +29,15 @@ This will allow you to control the synergy and manipulation degrees of freedom w
 
 ## Using with the Panda Arm
 First, familiarise yourself with the TUDelft Human Friendly Controllers for the Panda, see https://github.com/franzesegiovanni/franka_human_friendly_controllers. 
-1. Mount the SoftHand: Remove the Panda Hand and mount the SoftHand using the adapter coupling in the box. Configure the end effector properties in the Panda Desk application; set the Mass to 0.886kg and the COM Flange Offset to x = 0, y = 0, z = 0.083m. (TODO - end effector offset)
-2. Run the Panda FCI Controller: the example scripts are written to work with the Cartesian Endpoint Impedance Controller only, ie the arm is controlled by publishing an end effector goal pose to `/equilibrium_pose`. Launch a compatible controller on the Panda desktop PC, eg
+1. Mount the SoftHand: Remove the Panda Hand and mount the SoftHand using the adapter coupling in the box. Configure the end effector properties in the Panda Desk application; set the Mass to 1.0kg and the COM Flange Offset to x = 0, y = 0, z = 0.083m. (TODO - end effector offset)
+2. Run the Panda FCI Controller: the example scripts are written to work with the Cartesian Endpoint Impedance Controller only, ie the arm is controlled by publishing an end effector goal pose to `/equilibrium_pose`. Launch a compatible controller on the Panda desktop PC (ensure the black control E-stop button is released first), eg
 ```
 roslaunch franka_human_friendly_controllers cartesian_variable_impedance_controller.launch robot_ip:=ROBOT_IP
 ```
 3. Run python example scripts - see more details below. To run the scripts from your own laptop, see the section 'How to connect your PC to the network and read and send commands to the controller' at https://github.com/franzesegiovanni/franka_ros_TUD/tree/tu-delft-control. 
 
 ### arm_hand_combined_control.py
-This controls the Panda endpoint and SoftHand setpoint from various input sources, which can be toggled on and off using the keyboard number keys. Most inputs can be active at the same time. The 3D mouse and control pad inputs require `spacenav_node` and `joy_node` respectively to be running (http://wiki.ros.org/spacenav_node, http://wiki.ros.org/joy)
+This controls the Panda endpoint and SoftHand setpoint from various input sources, which can be toggled on and off using the keyboard number keys. Most inputs can be active at the same time. All keyboard input can be toggled off so that you can type elsewhere with \` (if you remember to). The 3D mouse and control pad inputs require `spacenav_node` and `joy_node` respectively to be running (http://wiki.ros.org/spacenav_node, http://wiki.ros.org/joy)
 ```
 Use number keys to toggle control inputs on/off:
 	1. Keyboard	2. Mouse	3. 3D mouse	4. Control pad

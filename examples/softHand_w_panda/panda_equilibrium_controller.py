@@ -51,15 +51,29 @@ class panda_equilibrium_controller():
             self.use_sm = not self.use_sm
             if self.use_sm: print("\nPanda 3D mouse input on")
             else: print("\nPanda 3D mouse input off")
+        if key == KeyCode.from_char('0'):
+            self.set_stiffness(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            print("\nPanda impedance controller stiffness off")
+        if key == KeyCode.from_char('9'):
+            self.goal.header.stamp = rospy.Time.now()
+            self.goal.pose.position.x = self.curr_pos[0]
+            self.goal.pose.position.y = self.curr_pos[1]
+            self.goal.pose.position.z = self.curr_pos[2]
+            self.goal.pose.orientation.x = self.curr_ori[1]
+            self.goal.pose.orientation.y = self.curr_ori[2]
+            self.goal.pose.orientation.z = self.curr_ori[3]
+            self.goal.pose.orientation.w = self.curr_ori[0]
+            self.set_stiffness(self.K_pos, self.K_pos, self.K_pos, self.K_ori, self.K_ori, self.K_ori, 0.0)
+            print("\nPanda impedance controller stiffness on. Goal reset to current pose.")
 
         # Keyboard control input
         if self.use_keyboard == True:
             rot_quat = None
             # Nullspace stiffness
             if key == KeyCode.from_char('n'):
-                self.set_stiffness(self.K_pos, self.K_pos, self.K_pos ,self.K_ori,self.K_ori,self.K_ori, 1.0)
+                self.set_stiffness(self.K_pos, self.K_pos, self.K_pos, self.K_ori, self.K_ori, self.K_ori, 1.0)
             elif key == KeyCode.from_char('j'):
-                self.set_stiffness(self.K_pos, self.K_pos, self.K_pos ,self.K_ori,self.K_ori,self.K_ori, 0.0)
+                self.set_stiffness(self.K_pos, self.K_pos, self.K_pos, self.K_ori, self.K_ori, self.K_ori, 0.0)
             # Change goal position
             elif key == KeyCode.from_char('w'):
                 self.goal.pose.position.x += 0.01
