@@ -29,13 +29,8 @@ This will allow you to control the synergy and manipulation degrees of freedom w
 
 ## Using with the Panda Arm
 First, familiarise yourself with the TUDelft Human Friendly Controllers for the Panda, see https://github.com/franzesegiovanni/franka_human_friendly_controllers. 
-<<<<<<< HEAD
-1. Mount the SoftHand: Remove the Panda Hand and mount the SoftHand using the adapter coupling in the box. Configure the end effector properties in the Panda Desk application; set the Mass to 1.0kg and the COM Flange Offset to x = 0, y = 0, z = 0.083m. (TODO - end effector offset)
+1. Mount the SoftHand: Remove the Panda Hand and mount the SoftHand using the adapter coupling in the box. In the Panda Desk application go to Settings>End Effector and upload the `qbSoftHand_eeConfig.json` configuration file (or manually set the Mass to 1.0kg and the COM Flange Offset to x = 0, y = 0, z = 0.083m).
 2. Run the Panda FCI Controller: the example scripts are written to work with the Cartesian Endpoint Impedance Controller only, ie the arm is controlled by publishing an end effector goal pose to `/equilibrium_pose`. Launch a compatible controller on the Panda desktop PC (ensure the black control E-stop button is released first), eg
-=======
-1. Mount the SoftHand: Remove the Panda Hand and mount the SoftHand using the adapter coupling in the box. In the Panda Desk application go to Settings>End Effector and upload the `qbSoftHand_eeConfig.json` configuration file (or manually set the Mass to 0.886kg and the COM Flange Offset to x = 0, y = 0, z = 0.083m).
-2. Run the Panda FCI Controller: the example scripts are written to work with the Cartesian Endpoint Impedance Controller only, ie the arm is controlled by publishing an end effector goal pose to `/equilibrium_pose`. Launch a compatible controller on the Panda desktop PC, eg
->>>>>>> bffc301782b159a30560fca0b730ac8d68134ea5
 ```
 roslaunch franka_human_friendly_controllers cartesian_variable_impedance_controller.launch robot_ip:=<ROBOT_IP>
 ```
