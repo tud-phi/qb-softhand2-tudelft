@@ -29,10 +29,15 @@ This will allow you to control the synergy and manipulation degrees of freedom w
 
 ## Using with the Panda Arm
 First, familiarise yourself with the TUDelft Human Friendly Controllers for the Panda, see https://github.com/franzesegiovanni/franka_human_friendly_controllers. 
+<<<<<<< HEAD
 1. Mount the SoftHand: Remove the Panda Hand and mount the SoftHand using the adapter coupling in the box. Configure the end effector properties in the Panda Desk application; set the Mass to 1.0kg and the COM Flange Offset to x = 0, y = 0, z = 0.083m. (TODO - end effector offset)
 2. Run the Panda FCI Controller: the example scripts are written to work with the Cartesian Endpoint Impedance Controller only, ie the arm is controlled by publishing an end effector goal pose to `/equilibrium_pose`. Launch a compatible controller on the Panda desktop PC (ensure the black control E-stop button is released first), eg
+=======
+1. Mount the SoftHand: Remove the Panda Hand and mount the SoftHand using the adapter coupling in the box. In the Panda Desk application go to Settings>End Effector and upload the `qbSoftHand_eeConfig.json` configuration file (or manually set the Mass to 0.886kg and the COM Flange Offset to x = 0, y = 0, z = 0.083m).
+2. Run the Panda FCI Controller: the example scripts are written to work with the Cartesian Endpoint Impedance Controller only, ie the arm is controlled by publishing an end effector goal pose to `/equilibrium_pose`. Launch a compatible controller on the Panda desktop PC, eg
+>>>>>>> bffc301782b159a30560fca0b730ac8d68134ea5
 ```
-roslaunch franka_human_friendly_controllers cartesian_variable_impedance_controller.launch robot_ip:=ROBOT_IP
+roslaunch franka_human_friendly_controllers cartesian_variable_impedance_controller.launch robot_ip:=<ROBOT_IP>
 ```
 3. Run python example scripts - see more details below. To run the scripts from your own laptop, see the section 'How to connect your PC to the network and read and send commands to the controller' at https://github.com/franzesegiovanni/franka_ros_TUD/tree/tu-delft-control. 
 
@@ -78,13 +83,13 @@ Esc:	Quit
 ```
 The script uses the classes implemented in `panda_equilibrium_controller.py` and `softhand_setpt_controller.py` which can be reused to write other high level control scripts.
 ### traj_recorder.py
-Records a trajectory (end effector pose, joint configuration, and SoftHand setpoint (if connected)) to an .npz file. Recording can be paused and resumed, with interpolation between poses inserted in the final trajectory. The trajectory will be saved in the working directory, if a string argument is supplied to the script it will be used as the filename, otherwise it will default to Date_Time. \
+Records a trajectory (end effector pose, joint configuration, and SoftHand setpoint) to an .npz file. Recording can be paused and resumed, with interpolation between discontinuities inserted in the final trajectory. The trajectory will be saved in the working directory, if a string argument is supplied to the script it will be used as the filename, otherwise it will default to Date_Time. \
 Eg (will save as test.npz):
 ```
 python3 traj_recorder.py test
 ```
 ### traj_player.py
-Plays back a trajectory (end effector pose and SoftHand setpoint (TBC)) saved in an .npz file, ie publishes the recorded data to the relevant command topics. It will first interpolate to the initial recorded pose from the current pose. Note that this just loops through all recorded points at a set rate, there is no time reference built into the saved trajectory. \
+Plays back a trajectory (end effector pose and SoftHand setpoint) saved in an .npz file, ie publishes the recorded data to the relevant command topics. It will first interpolate to the initial recorded pose from the current pose. Note that this just loops through all recorded points at a set rate, there is no time reference built into the saved trajectory. \
 Eg (assuming test.npz is in the working directory):
 ```
 python3 traj_player.py test.npz
