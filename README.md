@@ -13,6 +13,7 @@ git clone https://bitbucket.org/qbrobotics/qbhand-ros.git
 
 ## Start the SoftHand controller
 Connect the SoftHand's cable to the power supply and a USB port on your PC. See the documentation for details. \
+If you have never set it up, you probably need to add your linux user to the `dialout` group to grant right access to the serial port resources. Execute the following in a terminal: `sudo gpasswd -a <linux_user_name> dialout`; you may need to reboot afterwards. \
 To bring the SoftHand controller online, use the below terminal command. Note that the launch file name is different from the bitbucket instructions.
 ```
 roslaunch qb_hand_control control_qbhand2m.launch standalone:=true activate_on_initialization:=true device_id:=<actual_device_id>
@@ -50,13 +51,14 @@ Keyboard controls:
 	H/F:		 x-orientation +/-
 	T/G:		 y-orientation +/-
 	R/Y:		 z-orientation +/-
+	9/0:		 Impedance stiffness on/off
 	N/J:		 Nullspace stiffness on/off
 
 	SoftHand:
 	up/down:	 synergy +/-
 	left/right:	 manipulation +/-
-	PgUp/PgDown:	 toggles synergy fully open/closed
-	,/.:		 toggles manipulation fully left/right
+	PgUp/PgDown:	 toggle synergy fully open/closed
+	,/.:		 toggle manipulation fully left/right
 
 Mouse controls:
 	Movement:	 X/Y position
@@ -68,14 +70,19 @@ Mouse controls:
 	R button:	 Toggle SoftHand manipulation fully left/right
 
 Control pad controls (use analog trigger mode):
-	Left trigger:	 Control SoftHand manipulation
-	Right trigger:	 Control SoftHand synergy
-	Left bumper:	 Lock SoftHand manipulation
-	Right bumper:	 Lock SoftHand synergy
+	Left thumbstick:	 move X & Y direction in end effector frame
+	Right thumbstick:	 rotate around X & Y axes in end effector frame
+	D-pad Left/Right:	 rotate around Z zaxis in end effector frame
+	D-pad Up/Down:		 move Z direction in end effector frame
+	Left trigger:		 Control SoftHand manipulation
+	Right trigger:		 Control SoftHand synergy
+	Left bumper:		 Lock/Unlock SoftHand manipulation
+	Right bumper:		 Lock/Unlock SoftHand synergy
 
 Esc:	Quit
 `:	Toggle suspending all keyboard input
 ```
+TODO - add notes about joy_node thumbstick controls
 The script uses the classes implemented in `panda_equilibrium_controller.py` and `softhand_setpt_controller.py` which can be reused to write other high level control scripts.
 ### traj_recorder.py
 Records a trajectory (end effector pose, joint configuration, and SoftHand setpoint) to an .npz file. Recording can be paused and resumed, with interpolation between discontinuities inserted in the final trajectory. The trajectory will be saved in the working directory, if a string argument is supplied to the script it will be used as the filename, otherwise it will default to Date_Time. \

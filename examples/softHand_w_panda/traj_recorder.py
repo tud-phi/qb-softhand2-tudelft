@@ -4,7 +4,7 @@ import sys
 import datetime
 import pathlib
 import numpy as np
-import quaternion # pip install numpy-quaternion
+#import quaternion # pip install numpy-quaternion
 import rospy
 import rosnode
 from geometry_msgs.msg import PoseStamped
@@ -50,7 +50,8 @@ if __name__ == '__main__':
     key_listener.start()
     key_in = None
 
-    arm_connected = True if ("/panda_controller_spawner" in rosnode.get_node_names()) or ("/franka_control" in rosnode.get_node_names()) else False
+    # Initialisation and hardware detection
+    arm_connected = True if ("/panda_controller_spawner" in rosnode.get_node_names()) or ("/franka_control" in rosnode.get_node_names()) else False # panda_controller_spawner is for Gazebo
     hand_connected = True if "/qb_device_communication_handler" in rosnode.get_node_names() else False
 
     if arm_connected:
@@ -72,6 +73,7 @@ if __name__ == '__main__':
     record_rate = 30 # Hz
     ros_record_rate = rospy.Rate(record_rate)
 
+    # Set output file name
     if len(sys.argv) < 2:
         record_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         print("You didn't specify, so date_time has been used as the file name: ",record_name)
@@ -80,13 +82,14 @@ if __name__ == '__main__':
         record_name = str(sys.argv[1])
         print("Recording will be saved with filename: ", record_name)
 
+    # Wait for start input
     print("\nPress Space to start recording cartesian goal pose and joint positions.")
     while key_in != Key.space:
         pass
     key_in = None
 
     print("\nRecording started. Press P to pause.")
-    pose_trajectory = pose_current if arm_connected else None # Note first point of pose trajectory is actual starting pose, the rest will be goal equilibrium poses
+    pose_trajectory = pose_current if arm_connected else None
     joint_trajectory = joint_state_current if arm_connected else None
     hand_trajectory = hand_command_current if hand_connected else None
     ros_record_rate.sleep()
@@ -103,8 +106,10 @@ if __name__ == '__main__':
             while (key_in != KeyCode.from_char('p') and key_in != Key.space):
                 pass
             if key_in == Key.space:
+                # End recording
                 break
             elif key_in == KeyCode.from_char('p'):
+                # Resume recording
                 # Insert interpolations into trajectories
                 interp_length = 0
                 if arm_connected:
@@ -138,6 +143,7 @@ if __name__ == '__main__':
             if hand_connected: hand_trajectory = np.c_[hand_trajectory, hand_command_current]
             ros_record_rate .sleep()
     
+    # Save data
     np.savez(
         str(pathlib.Path().resolve())+'/'+str(record_name)+'.npz',
         pose_trajectory = pose_trajectory,

@@ -3,7 +3,7 @@
 import sys
 import pathlib
 import numpy as np
-import quaternion # pip install numpy-quaternion
+#import quaternion # pip install numpy-quaternion
 import rospy
 import rosnode
 from geometry_msgs.msg import PoseStamped
@@ -11,7 +11,7 @@ from trajectory_msgs.msg import JointTrajectory
 from pynput import keyboard
 from pynput.keyboard import Key
 
-from traj_utils import interpolate_poses, interpolate_softhand
+from traj_utils import interpolate_poses
 
 global key_in
 global pose_current
@@ -33,15 +33,17 @@ if __name__ == '__main__':
 
     rospy.init_node('traj_player', anonymous=True)
 
-    if ("/arm_hand_combined_control" in rosnode.get_node_names()): 
-        print("Shut down manual control before starting trajectory playback")
+    # Avoid conflicts between playback and manual control
+    if ("/arm_hand_combined_control" in rosnode.get_node_names()):
+        print("Please shut down manual control before starting trajectory playback.")
         sys.exit()
 
+    # Initialisation and hardware detection
     key_listener = keyboard.Listener(on_press=_on_press, suppress=False)
     key_listener.start()
     key_in = None
 
-    arm_connected = True if ("/panda_controller_spawner" in rosnode.get_node_names()) or ("/franka_control" in rosnode.get_node_names()) else False
+    arm_connected = True if ("/panda_controller_spawner" in rosnode.get_node_names()) or ("/franka_control" in rosnode.get_node_names()) else False # panada_controller_spawner is for Gazebo
     hand_connected = True if "/qb_device_communication_handler" in rosnode.get_node_names() else False
 
     if arm_connected:
@@ -53,7 +55,6 @@ if __name__ == '__main__':
     else:
         print("Panda arm not detected")
     if hand_connected:
-        # hand_sub = rospy.Subscriber('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, hand_callback)
         hand_pub = rospy.Publisher('/qbhand2m1/control/qbhand2m1_synergies_trajectory_controller/command', JointTrajectory, queue_size=0)
         hand_setpt = JointTrajectory()
         print("SoftHand detected")
@@ -87,6 +88,7 @@ if __name__ == '__main__':
         print("Trajectory recording empty, exiting")
         sys.exit()
 
+    # Start playback
     if arm_connected:
         print("Going to starting pose...")
         while pose_current == None:
