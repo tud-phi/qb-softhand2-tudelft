@@ -1,0 +1,16 @@
+Note the dimensions below are approximate only, test the trajectory in free space first.
+
+shake
+    presents hand and closes grip after about 5sec
+pick_jar_top_in_front
+    pick up a jar from the lid (palm facing down), located X=0, Y=~0.3 in front of robot. jar is ~15cm tall and lid ~7cm radius. Arm then moves the jar to the right and drops it.
+lift_from_pinch
+    makes a pinch grip at a location approximately X=0, Y=-0.7, Z=0.15, then lifts up
+pick_obj_desk_surface
+    picks up an object lying flat on desk at X=0.25, Y=-0.5. test object was a roll of tape ~7cm diameter, ~1.5cm high
+pickup_bottle
+    picks up a bottle from X=0.25, Y=-0.5. tested with bottle ~6cm diameter
+remove_container_top
+    attempt to grip and remove the lid of a small container by pulling straight upwards (contianer needs to be held in place). tested with plastic container with ~7x8cm lid. The location is at approximately X=0, Y=-0.75, Z=0.3.
+take_pen
+    presents hand to take pen and waits ~5sec before grasping. pen should be placed with the tip end resting against inside of middle finger and other end resting where thumb meets palm. after gripping, arm will move pen tip to desk surface at around X=0, Y=-0.6 and draw some arbitrary lines.
