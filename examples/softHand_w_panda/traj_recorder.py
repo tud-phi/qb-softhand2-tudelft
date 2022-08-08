@@ -4,7 +4,6 @@ import sys
 import datetime
 import pathlib
 import numpy as np
-#import quaternion # pip install numpy-quaternion
 import rospy
 import rosnode
 from geometry_msgs.msg import PoseStamped

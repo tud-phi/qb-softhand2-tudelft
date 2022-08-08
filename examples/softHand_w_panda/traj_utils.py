@@ -1,14 +1,13 @@
 #%%
 #!/usr/bin/env python
 import numpy as np
-import quaternion # pip install numpy-quaternion
 import math
 import rospy
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-# Adapted from Learning_from_demonstration.py go_to_pose()
+# Adapted from Human Friendly Controllers - Learning_from_demonstration.py - go_to_pose()
 def interpolate_poses(pose_start, pose_end, interp_dist):
     start_pos = np.array([pose_start.pose.position.x, pose_start.pose.position.y, pose_start.pose.position.z])
     start_quat = np.quaternion(pose_start.pose.orientation.w, pose_start.pose.orientation.x, pose_start.pose.orientation.y, pose_start.pose.orientation.z)
